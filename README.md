@@ -31,12 +31,12 @@ Widget forme = Forme(
 | onFieldStatusChanged | false | `FormeFieldStatusChanged` | listen form field's status change |
 | initialValue | false | `Map<String,dynamic>` | initialValue , **will override FormField's initialValue** |
 | onWillPop | false | `WillPopCallback` | Signature for a callback that verifies that it's OK to call Navigator.pop |
-| quietlyValidate | false | `bool` | if this attribute is true , will not display default error text|
+| quietlyValidate | false | `bool` | if this attribute is true , will not display error text|
 | autovalidateMode| false | `AutovalidateMode` | auto validate form mode |
 | autovalidateByOrder | false | `bool` | whether auto validate form by order |
 | onFieldsRegistered | false | `function` | listen registered fields  |
 | onFieldsUnregistered | false | `function` | listen unregistered fields |
-| onInitialed | false | `function` | used register visitors |
+| onInitialized | false | `function` | typically used to register visitors |
 
 
 ## FormeField
@@ -45,25 +45,22 @@ Widget forme = Forme(
 
 | Attribute |  Required  | Type | Description  |
 | --- | --- | --- | --- |
-| name | true | `String` | field's id,**should be unique in form** |
+| name | false | `String` | field's id,**should be unique in form** |
 | readOnly | false | `bool` | whether field should be readOnly,default is `false` |
 | builder | true | `FormeFieldBuilder` | build field content|
-| enabled | false | `function` | used to compare field's value |
-| comparator | false | `bool` | whether field is enabled , default is `true` |
-| quietlyValidate | true | `bool` | whether validate quietly |
+| enabled | false | `bool` | whether field is enabled or not default |
+| quietlyValidate | true | `bool` | `false` will not display error text  |
 | initialValue | true | `T` | default value of field , will overwritten by `Forme` initialValue |
 | asyncValidatorDebounce | false | `Duration` | async validate debounce , default is 500ms |
 | autovalidateMode | false | `AutovalidateMode` | autovalidate mode |
 | onStatusChanged | false | `FormeFieldStatusChanged` | listen value|read-only|focus|validation|enabled change |
-| onInitialed | false | `FormeFieldInitialed` | used to register visitors |
+| onInitialized | false | `FormeFieldInitialized` | typically used to register visitors |
 | onSaved | false | `FormeFieldSetter` | triggered when form saved |
 | validator | false | `FormeValidator` | sync validator |
 | asyncValidator | false | `FormeAsyncValidator` | async validator |
-| decorator | false | `FormeFieldDecorator` | used to decorator a field |
+| decorator | false | `FormeFieldDecorator` | used to decorate a field |
 | order | false |  `int` | order of field |
 | requestFocusOnUserInteraction | false | `bool` | whether request focus when field value changed by user interaction |
-| registrable | false | `bool` | whether this field should be registered to Forme |
-| valueUpdater | false | `function` | used to update value in `didUpdateWidget` |
 | validationFilter | false | `function` | used to determine whether perform a validation or not |
 | focusNode | false | `FocusNode` | FocusNode |
 
@@ -72,7 +69,7 @@ Widget forme = Forme(
 
 ### Async Validation
 
-async validator is supported after Forme 2.5.0 , you can specify an `asyncValidator` on `FormeField` , the unique difference
+you can specify an `asyncValidator` on `FormeField` , the unique difference
 between `validator` and `asyncValidator` is `asyncValidator` return a `Future<String>` and `validator` return a `String`
 
 #### when to perform an async validation
@@ -262,10 +259,34 @@ bool enabled = field.enabled;
 field.enabled = bool enabled;
 ```
 
-#### get  focusNode
+#### whether field has a FocusNode
+
+``` Dart
+bool hasFocusNode = field.hasFocusNode
+```
+
+#### get  or create a focusNode
 
 ``` Dart
 FocusNode focusNode = field.focusNode;
+```
+
+#### whether field is focused
+
+``` Dart
+bool hasFocus = field.hasFocus;
+```
+
+#### request focus
+
+``` Dart
+field.requestFocus();
+```
+
+#### unfocus
+
+``` Dart
+field.unfocus();
 ```
 
 #### get value
@@ -303,8 +324,10 @@ FormeFieldValidation validation = field.validation;
 if value changed , you can use this method to get previous value
 
 ``` Dart
-T? value = field.oldValue;
+FormeOptional<T>? value = field.oldValue;
 ```
+
+if value is null , means field's value is never changed before
 
 #### is value changed
 
@@ -348,7 +371,7 @@ bool isCustomValidation = field.isCustomValidation;
 
 typically used in display.
 
-if FormeField.quietlyValidate or Forme.quietlyValidate is true , you'll always get null 
+if `FormeField.quietlyValidate` or `Forme.quietlyValidate` is true , you'll always get null 
 
 ``` Dart
 String? errorText = field.errorText;
@@ -358,7 +381,7 @@ String? errorText = field.errorText;
 
 if `errorText` is null , reset validation.
 
-field will rebuild after this method called. if field has validators , a new validation maybe performed , in this case ,custom validation will be overwritten by new validation. use FormeField.validationFilter to avoid this
+field will rebuild after this method called. if field has validators , a new validation maybe performed , in this case ,custom validation will be overwritten by new validation. use `FormeField.validationFilter` to avoid this
 
 **will not worked on disabled fields**
 
@@ -380,7 +403,7 @@ field.removeVisitor(FormeFieldVisitor visitor);
 
 ## Listeners
 
-listeners is helpful when you  build  widgets which depends on status of FormeField or Forme , you must used them inside in `Forme` or `FormeField`
+listeners is helpful when you  build  widgets which depends on status of `FormeField` or `Forme` , you must used them inside in `Forme` or `FormeField`
 
 ### FormeFieldStatusListener
 
