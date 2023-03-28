@@ -223,7 +223,7 @@ class FormeField<T> extends StatefulWidget {
   const FormeField({
     Key? key,
     this.validator,
-    required this.name,
+    this.name,
     this.readOnly = false,
     required this.builder,
     this.enabled = true,

@@ -292,7 +292,7 @@ class FormeState extends State<Forme> {
 
   @override
   Widget build(BuildContext context) {
-    if (_needValidate) {
+    if (_needValidateForm) {
       _validateForm();
     }
     return WillPopScope(
@@ -313,28 +313,28 @@ class FormeState extends State<Forme> {
     super.dispose();
   }
 
-  Future<FormeValidation> _validateForm() async {
+  void _validateForm() {
     if (widget.autovalidateByOrder) {
-      final List<FormeFieldState> valueFieldStates = _states
+      final List<FormeFieldState> states = _states
           .where((element) =>
               element._hasAnyValidator &&
               element.enabled &&
               element.name != null)
           .toList()
         ..sort((a, b) => a.order!.compareTo(b.order!));
-      if (valueFieldStates.isEmpty) {
-        return const FormeValidation({});
+      if (states.isEmpty) {
+        return;
       }
-      return _validateByOrder(valueFieldStates, collector: {});
+      for (FormeFieldState state in states) {
+        state.errorText = null;
+      }
+      _validateByOrder(states);
     } else {
-      final Map<String, FormeFieldValidation> validations = {};
-      await Future.wait(_states
-          .where((element) => element.enabled && element.name != null)
-          .map((e) => e._validateByForm().then((value) {
-                validations[e.name!] = value;
-                return value;
-              })));
-      return FormeValidation(validations);
+      Iterable<FormeFieldState> states = _states
+          .where((element) => element.enabled && element._isRegisterable);
+      for (FormeFieldState state in states) {
+        state._validateInBuild();
+      }
     }
   }
 
@@ -345,7 +345,7 @@ class FormeState extends State<Forme> {
     return value;
   }
 
-  bool get _needValidate {
+  bool get _needValidateForm {
     if (autovalidateMode == AutovalidateMode.always) {
       return true;
     }
@@ -356,7 +356,7 @@ class FormeState extends State<Forme> {
   }
 
   void _fieldDidChange() {
-    if (_needValidate) {
+    if (_needValidateForm) {
       setState(() {
         // ++_gen;
       });
@@ -408,7 +408,7 @@ class FormeState extends State<Forme> {
       _states.add(state);
       if (_newRegisteredStates.isEmpty) {
         SchedulerBinding.instance.endOfFrame.then((_) {
-          if (_needValidate) {
+          if (_needValidateForm) {
             _validateForm();
           }
           final List<FormeFieldState> states = List.of(_newRegisteredStates);
@@ -425,7 +425,7 @@ class FormeState extends State<Forme> {
       if (_newUnregisteredStates.isEmpty) {
         SchedulerBinding.instance.endOfFrame.then((_) {
           if (mounted) {
-            if (_needValidate) {
+            if (_needValidateForm) {
               _validateForm();
             }
             final List<FormeFieldState> states =
@@ -458,21 +458,17 @@ class FormeState extends State<Forme> {
         index: index + 1, list: copyList);
   }
 
-  Future<FormeValidation> _validateByOrder(List<FormeFieldState> states,
-      {int index = 0,
-      required Map<String, FormeFieldValidation> collector}) async {
+  Future<void> _validateByOrder(List<FormeFieldState> states,
+      {int index = 0}) async {
     final int length = states.length;
     if (index >= length) {
-      return FormeValidation(collector);
+      return;
     }
     final FormeFieldState state = states[index];
-    final FormeFieldValidation validation = await state._validateByForm();
-    collector[state.name!] = validation;
-    if (validation.isUnnecessary || validation.isValid) {
-      return await _validateByOrder(states,
-          index: index + 1, collector: collector);
+    await state._validateInBuild();
+    if (state.validation.isUnnecessary || state.validation.isValid) {
+      return await _validateByOrder(states, index: index + 1);
     }
-    return FormeValidation(collector);
   }
 }
 
@@ -904,13 +900,19 @@ class FormeFieldState<T> extends State<FormeField<T>> {
 
   @override
   Widget build(BuildContext context) {
-    final bool needValidate = _hasAnyValidator &&
-        enabled &&
-        ((widget.autovalidateMode == AutovalidateMode.always) ||
-            (widget.autovalidateMode == AutovalidateMode.onUserInteraction &&
-                _hasInteractedByUser));
-    if (needValidate) {
-      _validateByField();
+    if (enabled) {
+      switch (widget.autovalidateMode) {
+        case AutovalidateMode.always:
+          _validateInBuild();
+          break;
+        case AutovalidateMode.onUserInteraction:
+          if (_hasInteractedByUser) {
+            _validateInBuild();
+          }
+          break;
+        case AutovalidateMode.disabled:
+          break;
+      }
     }
 
     _register();
@@ -1040,67 +1042,41 @@ class FormeFieldState<T> extends State<FormeField<T>> {
     }
   }
 
-  /// this method should be only called in [FormeState.build]
-  Future<FormeFieldValidation> _validateByForm() async {
-    if (!_needValidate) {
-      return _status.validation;
-    }
-
-    if (!_hasAnyValidator) {
-      _notifyValidation(FormeFieldValidation.unnecessary, true);
-      return _status.validation;
-    }
-
-    T value = this.value;
-    final int gen = ++_validateGen;
-    if (_hasValidator) {
-      final String? errorText = widget.validator!(this, value);
-      if (errorText != null || !_hasAsyncValidator) {
-        _notifyValidation(_createFormeFieldValidation(errorText), true);
-        return _status.validation;
-      }
-    }
-
-    if (_hasAsyncValidator) {
-      _notifyValidation(FormeFieldValidation.validating, true);
-      await _performAsyncValidate(gen, value, (validation) {
-        _notifyValidation(validation, true);
-      });
-    }
-    return _status.validation;
-  }
-
-  /// this method should  be only called in [FormeFieldState.build]
-  void _validateByField() {
-    if (!_needValidate) {
-      return;
-    }
-
+  /// this method should  be only called in [FormeFieldState.build] or [FormeState.build]
+  FutureOr<void> _validateInBuild() {
     if (!_hasAnyValidator) {
       _notifyValidation(FormeFieldValidation.unnecessary, false);
-      return;
+      return null;
     }
-
+    if (!_needValidate) {
+      return null;
+    }
     T value = this.value;
-
     final int gen = ++_validateGen;
-
     if (_hasValidator) {
       final String? errorText = widget.validator!(this, value);
       if (errorText != null || !_hasAsyncValidator) {
         _notifyValidation(_createFormeFieldValidation(errorText), false);
-        return;
+        return null;
       }
     }
     if (_hasAsyncValidator) {
       _notifyValidation(FormeFieldValidation.validating, false);
+      Completer<void> completer = Completer.sync();
+      Future<void> asyncValidate() async {
+        _performAsyncValidate(gen, value, (validation) {
+          _notifyValidation(validation, true);
+        }).whenComplete(() {
+          completer.complete();
+        });
+      }
+
       _asyncValidatorTimer?.cancel();
       _asyncValidatorTimer = Timer(
           widget.asyncValidatorDebounce ?? _defaultAsyncValidatorDebounce, () {
-        _performAsyncValidate(gen, value, (validation) {
-          _notifyValidation(validation, true);
-        });
+        asyncValidate();
       });
+      return completer.future;
     }
   }
 
