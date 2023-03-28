@@ -1,3 +1,7 @@
+## 4.3.1
+
+1. improve validation performance
+
 ## 4.3.0
 
 1. update Flutter to 3.7 and sdk to 2.17
