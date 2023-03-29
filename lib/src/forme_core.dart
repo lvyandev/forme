@@ -325,15 +325,12 @@ class FormeState extends State<Forme> {
       if (states.isEmpty) {
         return;
       }
-      for (FormeFieldState state in states) {
-        state.errorText = null;
-      }
       _validateByOrder(states);
     } else {
       Iterable<FormeFieldState> states = _states
           .where((element) => element.enabled && element._isRegisterable);
       for (FormeFieldState state in states) {
-        state._validateInBuild();
+        state._validateInBuild(requestNewFrame: true);
       }
     }
   }
@@ -465,7 +462,7 @@ class FormeState extends State<Forme> {
       return;
     }
     final FormeFieldState state = states[index];
-    await state._validateInBuild();
+    await state._validateInBuild(requestNewFrame: true);
     if (state.validation.isUnnecessary || state.validation.isValid) {
       return await _validateByOrder(states, index: index + 1);
     }
@@ -1027,7 +1024,7 @@ class FormeFieldState<T> extends State<FormeField<T>> {
     return (widget.validationFilter ?? _defaultValidationFilter).call(context);
   }
 
-  void _notifyValidation(
+  void _updateValidation(
       FormeFieldValidation validation, bool requestNewFrame) {
     if (mounted && validation != _status.validation) {
       if (requestNewFrame) {
@@ -1043,9 +1040,11 @@ class FormeFieldState<T> extends State<FormeField<T>> {
   }
 
   /// this method should  be only called in [FormeFieldState.build] or [FormeState.build]
-  FutureOr<void> _validateInBuild() {
+  FutureOr<void> _validateInBuild({
+    bool requestNewFrame = false,
+  }) {
     if (!_hasAnyValidator) {
-      _notifyValidation(FormeFieldValidation.unnecessary, false);
+      _updateValidation(FormeFieldValidation.unnecessary, requestNewFrame);
       return null;
     }
     if (!_needValidate) {
@@ -1056,18 +1055,21 @@ class FormeFieldState<T> extends State<FormeField<T>> {
     if (_hasValidator) {
       final String? errorText = widget.validator!(this, value);
       if (errorText != null || !_hasAsyncValidator) {
-        _notifyValidation(_createFormeFieldValidation(errorText), false);
+        _updateValidation(
+            _createFormeFieldValidation(errorText), requestNewFrame);
         return null;
       }
     }
     if (_hasAsyncValidator) {
-      _notifyValidation(FormeFieldValidation.validating, false);
+      _updateValidation(FormeFieldValidation.validating, requestNewFrame);
       Completer<void> completer = Completer.sync();
       Future<void> asyncValidate() async {
         _performAsyncValidate(gen, value, (validation) {
-          _notifyValidation(validation, true);
+          _updateValidation(validation, true);
         }).whenComplete(() {
-          completer.complete();
+          if (mounted) {
+            completer.complete();
+          }
         });
       }
 
