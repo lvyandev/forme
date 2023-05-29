@@ -12,15 +12,15 @@ class FormeValidates {
   ///
   /// 1. value is null
   /// 2. value == given value
-  static FormeValidator equals(dynamic value, {String errorText = ''}) {
-    return (f, dynamic v) => value == null || v == value ? null : errorText;
+  static FormeValidator<T> equals<T>(T value, {String errorText = ''}) {
+    return (f, T v) => value == null || v == value ? null : errorText;
   }
 
   /// when valid
   ///
   /// 1. value is not null
-  static FormeValidator notNull({String errorText = ''}) {
-    return (f, dynamic v) => v == null ? errorText : null;
+  static FormeValidator<T> notNull<T>({String errorText = ''}) {
+    return (f, T v) => v == null ? errorText : null;
   }
 
   /// when valid
@@ -28,8 +28,9 @@ class FormeValidates {
   /// 1. value is null
   /// 2. min == null && max == null
   /// 3. value's length is > min and < max
-  static FormeValidator size({String errorText = '', int? min, int? max}) {
-    return (f, dynamic v) {
+  static FormeValidator<T> size<T>(
+      {String errorText = '', int? min, int? max}) {
+    return (f, T v) {
       if (v == null) {
         return null;
       }
@@ -45,15 +46,15 @@ class FormeValidates {
   ///
   /// 1. value is null
   /// 2. value is >= min
-  static FormeValidator min(double min, {String errorText = ''}) {
-    return (f, dynamic v) => (v != null && v as num < min) ? errorText : null;
+  static FormeValidator<T> min<T>(double min, {String errorText = ''}) {
+    return (f, T v) => (v != null && v as num < min) ? errorText : null;
   }
 
   /// when valid
   ///
   /// 1. value is null
   /// 2. value is <= max
-  static FormeValidator max(double max, {String errorText = ''}) {
+  static FormeValidator<T> max<T>(double max, {String errorText = ''}) {
     return (f, dynamic v) => (v != null && v as num > max) ? errorText : null;
   }
 
@@ -61,8 +62,9 @@ class FormeValidates {
   ///
   /// 1. value is null
   /// 2. value >= min && value <= max
-  static FormeValidator range(double min, double max, {String errorText = ''}) {
-    return (f, dynamic v) =>
+  static FormeValidator<T> range<T>(double min, double max,
+      {String errorText = ''}) {
+    return (f, T v) =>
         (v == null || (v as num >= min && v <= max)) ? null : errorText;
   }
 
@@ -70,8 +72,8 @@ class FormeValidates {
   ///
   /// 1. value is null
   /// 2. value's length > 0
-  static FormeValidator notEmpty({String errorText = ''}) {
-    return (f, dynamic v) {
+  static FormeValidator<T> notEmpty<T>({String errorText = ''}) {
+    return (f, T v) {
       if (v == null) {
         return errorText;
       }
@@ -86,8 +88,8 @@ class FormeValidates {
   ///
   /// 1. value is null
   /// 2. value's length(after trim) > 0
-  static FormeValidator notBlank({String errorText = ''}) {
-    return (f, dynamic v) {
+  static FormeValidator<T> notBlank<T>({String errorText = ''}) {
+    return (f, T v) {
       if (v == null) {
         return null;
       }
@@ -99,8 +101,8 @@ class FormeValidates {
   ///
   /// 1. value is null
   /// 2. value > 0
-  static FormeValidator positive({String errorText = ''}) {
-    return (f, dynamic v) {
+  static FormeValidator<T> positive<T>({String errorText = ''}) {
+    return (f, T v) {
       if (v == null) {
         return null;
       }
@@ -112,8 +114,8 @@ class FormeValidates {
   ///
   /// 1. value is null
   /// 2. value >= 0
-  static FormeValidator positiveOrZero({String errorText = ''}) {
-    return (f, dynamic v) {
+  static FormeValidator<T> positiveOrZero<T>({String errorText = ''}) {
+    return (f, T v) {
       if (v == null) {
         return null;
       }
@@ -125,8 +127,8 @@ class FormeValidates {
   ///
   /// 1. value is null
   /// 2. value < 0
-  static FormeValidator negative({String errorText = ''}) {
-    return (f, dynamic v) {
+  static FormeValidator<T> negative<T>({String errorText = ''}) {
+    return (f, T v) {
       if (v == null) {
         return null;
       }
@@ -138,8 +140,8 @@ class FormeValidates {
   ///
   /// 1. value is null
   /// 2. value <= 0
-  static FormeValidator negativeOrZero({String errorText = ''}) {
-    return (f, dynamic v) {
+  static FormeValidator<T> negativeOrZero<T>({String errorText = ''}) {
+    return (f, T v) {
       if (v == null) {
         return null;
       }
@@ -151,8 +153,8 @@ class FormeValidates {
   ///
   /// 1. value is null
   /// 2. value match pattern
-  static FormeValidator pattern(String pattern, {String errorText = ''}) {
-    return (f, dynamic v) {
+  static FormeValidator<T> pattern<T>(String pattern, {String errorText = ''}) {
+    return (f, T v) {
       if (v == null) {
         return null;
       }
@@ -168,7 +170,7 @@ class FormeValidates {
   ///
   /// 1. value is null
   /// 2. value is an email
-  static FormeValidator email({String errorText = ''}) {
+  static FormeValidator<T> email<T>({String errorText = ''}) {
     return pattern(emailPattern, errorText: errorText);
   }
 
@@ -176,13 +178,13 @@ class FormeValidates {
   ///
   /// 1. value is null
   /// 2. value is an url
-  static FormeValidator url({
+  static FormeValidator<T> url<T>({
     String errorText = '',
     String? schema,
     String? host,
     int? port,
   }) {
-    return (f, dynamic v) {
+    return (f, T v) {
       if (v == null || (v as String).isEmpty) {
         return null;
       }
@@ -209,10 +211,10 @@ class FormeValidates {
   /// when valid
   ///
   /// 1. any validator return null
-  static FormeValidator any(List<FormeValidator> validators,
+  static FormeValidator<T> any<T>(List<FormeValidator<T>> validators,
       {String errorText = ''}) {
-    return (f, dynamic v) {
-      for (final FormeValidator validator in validators) {
+    return (f, T v) {
+      for (final FormeValidator<T> validator in validators) {
         if (validator(f, v) == null) {
           return null;
         }
@@ -224,13 +226,13 @@ class FormeValidates {
   /// when valid
   ///
   /// 1. every validator return null
-  static FormeValidator all(List<FormeValidator> validators,
+  static FormeValidator<T> all<T>(List<FormeValidator<T>> validators,
       {String errorText = ''}) {
-    return (f, dynamic v) {
-      for (final FormeValidator validator in validators) {
-        final String? error = validator(f, v);
-        if (error != null) {
-          return error == '' ? errorText : error;
+    return (f, T v) {
+      for (final FormeValidator<T> validator in validators) {
+        final String? resultText = validator(f, v);
+        if (resultText != null) {
+          return resultText == '' ? errorText : resultText;
         }
       }
       return null;

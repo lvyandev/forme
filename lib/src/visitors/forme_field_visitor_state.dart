@@ -34,13 +34,13 @@ abstract class FormeFieldVisitorState<T extends FormeFieldVisitorWidget, E>
       }
     } else {
       _field = null;
-      final FormeState currentForm = Forme.of(context)!;
+      final FormeState? currentForm = Forme.of(context);
       final bool initialed = currentForm != _form;
       _form = currentForm;
-      _form!.addVisitor(this);
+      _form?.addVisitor(this);
       if (initialed) {
-        onInitialized(currentForm.hasField(widget.name!)
-            ? currentForm.field(widget.name!)
+        onInitialized(currentForm?.hasField(widget.name!) ?? false
+            ? currentForm?.field(widget.name!)
             : null);
       }
     }

@@ -31,6 +31,9 @@ class FormeKey extends LabeledGlobalKey<FormeState> {
 
   Map<String, dynamic> get value => _state.value;
 
+  /// Author (Lvyan): 添加除了field之外的value
+  Map<String, dynamic> get rawValue => _state.rawValue;
+
   FormeValidation get validation => _state.validation;
 
   T field<T extends FormeFieldState>(String name) => _state.field<T>(name);
@@ -137,8 +140,12 @@ class FormeState extends State<Forme> {
   final List<FormeFieldState> _newUnregisteredStates = [];
   final List<FormeVisitor> _visitors = [];
 
+  /// Author (Lvyan): 添加除了field之外的value
+  late final Map<String, dynamic> _formValue = {...widget.initialValue};
+
   /// get initialValue
   Map<String, dynamic> get initialValue => widget.initialValue;
+
   AutovalidateMode get autovalidateMode => widget.autovalidateMode;
 
   int _gen = 0;
@@ -179,6 +186,9 @@ class FormeState extends State<Forme> {
       final dynamic value = element.value;
       map[name] = value;
     }
+
+    // Author (Lvyan): 添加除了field之外的value
+    _formValue.addAll(map);
     return map;
   }
 
@@ -236,9 +246,35 @@ class FormeState extends State<Forme> {
   }
 
   /// set form value
-  set value(Map<String, dynamic> data) => data.forEach((key, dynamic value) {
-        maybeField(key)?.value = value;
-      });
+  set value(Map<String, dynamic> data) {
+    _formValue.clear();
+    data.forEach((key, dynamic value) {
+      maybeField(key)?.value = value;
+      _formValue[key] = value;
+    });
+  }
+
+  /// Author (Lvyan): 添加除了field之外的value
+  /// get raw form data
+  Map<String, dynamic> get rawValue => _formValue;
+
+  /// Author (Lvyan): 添加除了field之外的value
+  /// patch value to form
+  void patchValue(Map<String, dynamic> data) {
+    data.forEach((key, value) {
+      setRawKey(key, value);
+    });
+  }
+
+  /// Author (Lvyan): 添加除了field之外的value
+  /// set raw form data key
+  void setRawKey(String key, dynamic value) {
+    if (hasField(key)) {
+      maybeField(key)?.value = value;
+    } else {
+      _formValue[key] = value;
+    }
+  }
 
   /// get all regsitered  fields
   List<FormeFieldState> get fields => List.of(_states);
@@ -397,6 +433,14 @@ class FormeState extends State<Forme> {
       visitor.onFieldStatusChanged(this, state, status);
     }
 
+    // Author (Lvyan): 添加除了field之外的value
+    if (status.isValueChanged) {
+      String? name = state.name;
+      if (name != null) {
+        _formValue[name] = state.value;
+      }
+    }
+
     widget.onFieldStatusChanged?.call(state, status);
   }
 
@@ -496,7 +540,9 @@ class FormeFieldState<T> extends State<FormeField<T>> {
       const Duration(milliseconds: 500);
 
   FocusNode? _focusNode;
+
   FocusNode? get _currentFocusNode => widget.focusNode ?? _focusNode;
+
   FocusNode get _effectiveFocusNode {
     if (_currentFocusNode != null) {
       return _currentFocusNode!;
@@ -516,6 +562,7 @@ class FormeFieldState<T> extends State<FormeField<T>> {
   int? get order => widget.order ?? _formeState?._getOrder(this);
 
   String? get name => widget.name;
+
   T get value => _status.value;
 
   FormeOptional<T>? _oldValue;
@@ -525,17 +572,22 @@ class FormeFieldState<T> extends State<FormeField<T>> {
   bool _inited = false;
 
   bool get _hasValidator => widget.validator != null;
+
   bool get _hasAsyncValidator => widget.asyncValidator != null;
+
   bool get _hasAnyValidator => _hasValidator || _hasAsyncValidator;
 
   bool get readOnly => _status.readOnly;
+
   bool get enabled => _status.enabled;
 
   bool? _readOnly;
   bool? _enabled;
 
   bool get _isReadOnly => (_readOnly ?? widget.readOnly) || !_isEnabled;
+
   bool get _isEnabled => _enabled ?? widget.enabled;
+
   FormeFieldValidation get _validation {
     if (!_isEnabled || !_hasAnyValidator) {
       return FormeFieldValidation.unnecessary;
@@ -895,8 +947,7 @@ class FormeFieldState<T> extends State<FormeField<T>> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget defaultBuild() {
     if (enabled) {
       switch (widget.autovalidateMode) {
         case AutovalidateMode.always:
@@ -922,6 +973,11 @@ class FormeFieldState<T> extends State<FormeField<T>> {
         return child;
       },
     ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return defaultBuild();
   }
 
   /// is value equals
@@ -1198,6 +1254,7 @@ class FormeFieldStatus<T> {
 
 class FormeOptional<T> {
   final T value;
+
   FormeOptional(this.value);
 }
 
