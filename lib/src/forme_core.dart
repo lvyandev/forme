@@ -812,6 +812,10 @@ class FormeFieldState<T> extends State<FormeField<T>> {
         notify(validation);
         return FormeFieldValidateSnapshot(value, validation, name, this);
       }
+    } else if (isCustomValidation) {
+      final FormeFieldValidation validation = _status.validation;
+      notify(validation);
+      return FormeFieldValidateSnapshot(value, validation, name, this);
     }
 
     notify(FormeFieldValidation.validating);
