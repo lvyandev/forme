@@ -805,7 +805,12 @@ class FormeFieldState<T> extends State<FormeField<T>> {
     }
 
     if (_hasValidator) {
-      final String? errorText = widget.validator!(this, value);
+      String? errorText = widget.validator!(this, value);
+      // 如果当前是自定义异常，且自定义异常有值
+      if (isCustomValidation) {
+        errorText = _status.validation.error;
+      }
+
       if (errorText != null || !_hasAsyncValidator) {
         final FormeFieldValidation validation =
             _createFormeFieldValidation(errorText);
