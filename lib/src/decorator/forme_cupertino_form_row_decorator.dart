@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import 'package:forme/forme.dart';
+import 'package:junny_forme/forme.dart';
 
 class FormeCupertinoFormRowDecorator<T> implements FormeFieldDecorator<T> {
   FormeCupertinoFormRowDecorator({

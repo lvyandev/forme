@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:forme/forme.dart';
+import 'package:junny_forme/forme.dart';
 
 typedef EmptyChecker<T> = bool Function(T value, FormeFieldState<T> field);
 typedef InputDecorationBuilder = InputDecoration Function(BuildContext context);

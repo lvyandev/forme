@@ -1,4 +1,4 @@
-import 'package:forme/forme.dart';
+import 'package:junny_forme/forme.dart';
 
 class FormeFieldValidationContext<T> {
   /// current validate field

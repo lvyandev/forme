@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:forme/forme.dart';
+import 'package:junny_forme/forme.dart';
 
 void main() {
   runApp(const MyApp());

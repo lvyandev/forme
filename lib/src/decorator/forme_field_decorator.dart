@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:forme/forme.dart';
+import 'package:junny_forme/forme.dart';
 
 /// **Widget returned by this decorator is a part of `FormeField`**
 ///
